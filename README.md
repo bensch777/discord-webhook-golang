@@ -10,36 +10,36 @@ go get github.com/bensch777/discord-webhook-golang
 
 # Code Example
 ```go
-    embed := discordhooks.Embed{
+    embed := discordwebhook.Embed{
         Title:     "Example Webhook",
         Color:     15277667,
         Url:       "https://www....",
         Timestamp: time.Now(),
-        Thumbnail: discordhooks.Thumbnail{
+        Thumbnail: discordwebhook.Thumbnail{
             Url: "https://www....",
         },
-        Author: discordhooks.Author{
+        Author: discordwebhook.Author{
             Name:     "Autho Name",
             Icon_URL: "https://www....",
         },
-        Fields: []discordhooks.Field{
-            discordhooks.Field{
+        Fields: []discordwebhook.Field{
+            discordwebhook.Field{
                 Name:   "Feld 1",
                 Value:  "Feld Value 1",
                 Inline: true,
             },
-            discordhooks.Field{
+            discordwebhook.Field{
                 Name:   "Feld 2",
                 Value:  "Feld Value 2",
                 Inline: true,
             },
-            discordhooks.Field{
+            discordwebhook.Field{
                 Name:   "Feld 3",
                 Value:  "Feld Value 3",
                 Inline: false,
             },
         },
-        Footer: discordhooks.Footer{
+        Footer: discordwebhook.Footer{
             Text:     "Footer Text",
             Icon_url: "https://www....",
         },

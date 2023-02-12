@@ -1,4 +1,4 @@
-package discordhooks
+package discordwebhook
 
 import (
 	"bytes"
@@ -80,18 +80,7 @@ func ExecuteWebhook(link string, data []byte) error {
 	}
 	return err
 }
-func SendEmbeds(link string, embeds []Embed) error {
-	hook := Hook{
-		Embeds: embeds,
-	}
-	payload, err := json.Marshal(hook)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = ExecuteWebhook(link, payload)
-	return err
 
-}
 func SendEmbed(link string, embeds Embed) error {
 	hook := Hook{
 		Embeds: []Embed{embeds},
