@@ -1,3 +1,3 @@
-module github.com/Yannik29399/discordhooks/v3.7.0
+module https://github.com/bensch777/discord-webhook-golang/v.0.0.1
 
 go 1.18
