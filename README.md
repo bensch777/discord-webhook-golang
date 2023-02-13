@@ -32,23 +32,23 @@ func main() {
             Url: "https://avatars.githubusercontent.com/u/6016509?s=48&v=4",
         },
         Author: discordwebhook.Author{
-            Name:     "Autho Name",
+            Name:     "Author Name",
             Icon_URL: "https://avatars.githubusercontent.com/u/6016509?s=48&v=4",
         },
         Fields: []discordwebhook.Field{
             discordwebhook.Field{
-                Name:   "Feld 1",
-                Value:  "Feld Value 1",
+                Name:   "Field 1",
+                Value:  "Field Value 1",
                 Inline: true,
             },
             discordwebhook.Field{
-                Name:   "Feld 2",
-                Value:  "Feld Value 2",
+                Name:   "Field 2",
+                Value:  "Field Value 2",
                 Inline: true,
             },
             discordwebhook.Field{
-                Name:   "Feld 3",
-                Value:  "Feld Value 3",
+                Name:   "Field 3",
+                Value:  "Field Value 3",
                 Inline: false,
             },
         },
