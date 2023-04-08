@@ -3,9 +3,9 @@ package discordwebhook
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 )
@@ -57,26 +57,26 @@ func ExecuteWebhook(link string, data []byte) error {
 
 	req, err := http.NewRequest("POST", link, bytes.NewBuffer(data))
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer resp.Body.Close()
 	bodyText, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	if resp.StatusCode != 200 {
-		fmt.Printf("%s\n", bodyText)
+		return errors.New(fmt.Sprintf("%s\n", bodyText))
 	}
 	if resp.StatusCode == 429 {
 		fmt.Println("Rate limit reached")
 		time.Sleep(time.Second * 5)
-		ExecuteWebhook(link, data)
+		return ExecuteWebhook(link, data)
 	}
 	return err
 }
@@ -87,7 +87,7 @@ func SendEmbed(link string, embeds Embed) error {
 	}
 	payload, err := json.Marshal(hook)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	err = ExecuteWebhook(link, payload)
 	return err
