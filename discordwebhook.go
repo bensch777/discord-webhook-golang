@@ -70,7 +70,7 @@ func ExecuteWebhook(link string, data []byte) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != 200 && resp.StatusCode != 204 {
 		return errors.New(fmt.Sprintf("%s\n", bodyText))
 	}
 	if resp.StatusCode == 429 {
