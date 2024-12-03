@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -15,13 +16,16 @@ type Field struct {
 	Value  string `json:"value"`
 	Inline bool   `json:"inline"`
 }
+
 type Thumbnail struct {
 	Url string `json:"url"`
 }
+
 type Footer struct {
 	Text     string `json:"text"`
 	Icon_url string `json:"icon_url"`
 }
+
 type Embed struct {
 	Title       string    `json:"title"`
 	Url         string    `json:"url"`
@@ -45,6 +49,7 @@ type Attachment struct {
 	Description string `json:"description"`
 	Filename    string `json:"filename"`
 }
+
 type Hook struct {
 	Username    string       `json:"username"`
 	Avatar_url  string       `json:"avatar_url"`
@@ -53,8 +58,62 @@ type Hook struct {
 	Attachments []Attachment `json:"attachments"`
 }
 
-func ExecuteWebhook(link string, data []byte) error {
+// WebhookRequest represents a single webhook payload.
+type WebhookRequest struct {
+	Link string
+	Data []byte
+}
 
+// WebhookQueue manages the queue of rate-limited requests.
+type WebhookQueue struct {
+	queue chan WebhookRequest
+	wg    sync.WaitGroup
+}
+
+var rateLimitQueue *WebhookQueue
+
+// NewWebhookQueue initializes the global queue.
+func NewWebhookQueue(bufferSize int) *WebhookQueue {
+	return &WebhookQueue{
+		queue: make(chan WebhookRequest, bufferSize),
+	}
+}
+
+// Start begins processing the rate-limited requests in the queue.
+func (wq *WebhookQueue) Start() {
+	go func() {
+		for req := range wq.queue {
+			err := executeWithDelay(req.Link, req.Data)
+			if err != nil {
+				fmt.Printf("Failed to process webhook from queue: %v\n", err)
+			}
+			wq.wg.Done()
+		}
+	}()
+}
+
+// Add adds a request to the queue.
+func (wq *WebhookQueue) Add(request WebhookRequest) {
+	wq.wg.Add(1)
+	wq.queue <- request
+}
+
+// Stop waits for all tasks to complete.
+func (wq *WebhookQueue) Stop() {
+	wq.wg.Wait()
+	close(wq.queue)
+}
+
+// executeWithDelay retries a webhook request after a delay.
+func executeWithDelay(link string, data []byte) error {
+	// Wait for 10 seconds before retrying the request.
+	time.Sleep(2 * time.Second)
+	return ExecuteWebhook(link, data)
+}
+
+// ExecuteWebhook sends a webhook request with rate-limit handling.
+func ExecuteWebhook(link string, data []byte) error {
+	// Create the HTTP request.
 	req, err := http.NewRequest("POST", link, bytes.NewBuffer(data))
 	if err != nil {
 		return err
@@ -66,21 +125,30 @@ func ExecuteWebhook(link string, data []byte) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	// Read the response body.
 	bodyText, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 && resp.StatusCode != 204 {
-		return errors.New(fmt.Sprintf("%s\n", bodyText))
+
+	if resp.StatusCode == 200 || resp.StatusCode == 204 {
+		// Success: No further processing needed.
+		return nil
 	}
+
 	if resp.StatusCode == 429 {
-		fmt.Println("Rate limit reached")
-		time.Sleep(time.Second * 5)
-		return ExecuteWebhook(link, data)
+		// Rate limit reached: Add to the rate limit queue.
+		fmt.Println("Rate limit reached. Adding to the queue for retry.")
+		rateLimitQueue.Add(WebhookRequest{Link: link, Data: data})
+		return nil
 	}
-	return err
+
+	// Handle unexpected status codes.
+	return errors.New(fmt.Sprintf("Unexpected status code %d: %s", resp.StatusCode, bodyText))
 }
 
+// SendEmbed sends an embed to a Discord webhook.
 func SendEmbed(link string, embeds Embed) error {
 	hook := Hook{
 		Embeds: []Embed{embeds},
@@ -89,7 +157,11 @@ func SendEmbed(link string, embeds Embed) error {
 	if err != nil {
 		return err
 	}
-	err = ExecuteWebhook(link, payload)
-	return err
+	return ExecuteWebhook(link, payload)
+}
 
+func init() {
+	// Initialize the global rate-limit queue with a buffer size of 10.
+	rateLimitQueue = NewWebhookQueue(10)
+	rateLimitQueue.Start()
 }
